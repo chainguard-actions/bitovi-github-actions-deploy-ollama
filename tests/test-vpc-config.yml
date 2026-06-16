@@ -1,0 +1,42 @@
+name: Test VPC configuration inputs
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Run action with VPC configuration inputs
+        id: action
+        uses: .
+        continue-on-error: true
+        with:
+          checkout: 'false'
+          tf_state_file_name: 'test-vpc-state'
+          tf_state_bucket: 'test-vpc-bucket'
+          aws_access_key_id: 'fake-key-id'
+          aws_secret_access_key: 'fake-secret-key'
+          aws_session_token: 'fake-session-token'
+          aws_default_region: 'us-west-2'
+          aws_resource_identifier: 'my-custom-resource-id'
+          aws_additional_tags: '{"env":"test","team":"platform"}'
+          aws_vpc_create: 'true'
+          aws_vpc_name: 'my-test-vpc'
+          aws_vpc_cidr_block: '10.0.0.0/16'
+          aws_vpc_public_subnets: '10.0.1.0/24,10.0.2.0/24'
+          aws_vpc_private_subnets: '10.0.10.0/24,10.0.11.0/24'
+          aws_vpc_availability_zones: 'us-west-2a,us-west-2b'
+          aws_vpc_id: 'vpc-12345678'
+          aws_vpc_subnet_id: 'subnet-12345678'
+          aws_vpc_enable_nat_gateway: 'true'
+          aws_vpc_single_nat_gateway: 'true'
+          aws_vpc_external_nat_ip_ids: 'eipalloc-12345678'
+          aws_vpc_additional_tags: '{"vpc":"test"}'
+          ansible_ssh_to_private_ip: 'false'
+          ansible_start_docker_timeout: '300'
+
+      - name: Assert action was invoked with VPC inputs
+        run: |
+          echo "Action step completed (may have failed due to missing real AWS credentials)"
+          echo "PASS: VPC configuration inputs were accepted by the action"

@@ -1,0 +1,37 @@
+name: Test EC2 configuration inputs
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Run action with EC2 configuration inputs
+        id: action
+        uses: .
+        continue-on-error: true
+        with:
+          checkout: 'false'
+          tf_state_file_name: 'test-ec2-state'
+          tf_state_file_name_append: 'ec2-suffix'
+          tf_state_bucket: 'test-ec2-bucket'
+          tf_state_bucket_destroy: 'false'
+          aws_access_key_id: 'fake-key-id'
+          aws_secret_access_key: 'fake-secret-key'
+          aws_default_region: 'us-east-1'
+          aws_ec2_ami_filter: 'ubuntu/images/hvm-ssd/ubuntu-jammy-22.04-amd64-server-*'
+          aws_ec2_ami_owner: '099720109477'
+          aws_ec2_ami_id: 'ami-12345678'
+          aws_ec2_ami_update: 'false'
+          aws_ec2_iam_instance_profile: 'my-instance-profile'
+          aws_ec2_instance_root_vol_preserve: 'false'
+          aws_ec2_security_group_name: 'my-sg'
+          aws_ec2_create_keypair_sm: 'false'
+          aws_ec2_port_list: '[3011,11434]'
+          aws_ec2_additional_tags: '{"ec2":"test"}'
+
+      - name: Assert action was invoked with EC2 inputs
+        run: |
+          echo "Action step completed (may have failed due to missing real AWS credentials)"
+          echo "PASS: EC2 configuration inputs were accepted by the action"

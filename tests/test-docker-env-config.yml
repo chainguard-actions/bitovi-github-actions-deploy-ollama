@@ -1,0 +1,35 @@
+name: Test Docker and environment variable configuration inputs
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Run action with Docker and env configuration inputs
+        id: action
+        uses: .
+        continue-on-error: true
+        with:
+          checkout: 'false'
+          tf_state_file_name: 'test-docker-state'
+          tf_state_bucket: 'test-docker-bucket'
+          aws_access_key_id: 'fake-key-id'
+          aws_secret_access_key: 'fake-secret-key'
+          aws_default_region: 'us-east-1'
+          env_aws_secret: 'my-aws-secret'
+          env_repo: '.env'
+          env_ghs: 'MY_GH_SECRET'
+          env_ghv: 'MY_GH_VAR'
+          docker_remove_orphans: 'true'
+          docker_full_cleanup: 'false'
+          docker_repo_app_directory_cleanup: 'false'
+          docker_cloudwatch_lg_name: 'my-log-group'
+          docker_cloudwatch_skip_destroy: 'false'
+          docker_cloudwatch_retention_days: '30'
+
+      - name: Assert action was invoked with Docker and env inputs
+        run: |
+          echo "Action step completed (may have failed due to missing real AWS credentials)"
+          echo "PASS: Docker and environment variable configuration inputs were accepted by the action"

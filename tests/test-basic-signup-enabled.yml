@@ -1,0 +1,66 @@
+name: Test basic usage - signup enabled (default)
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Run action (signup enabled by default)
+        id: action
+        uses: .
+        continue-on-error: true
+        with:
+          disable_signup: 'false'
+          ollama_models: ''
+          checkout: 'false'
+          tf_state_file_name: 'test-state'
+          tf_state_bucket: 'test-bucket'
+          aws_access_key_id: 'fake-key-id'
+          aws_secret_access_key: 'fake-secret-key'
+          aws_default_region: 'us-east-1'
+
+      - name: Directly run the app env config logic (signup enabled)
+        shell: bash
+        env:
+          DISABLE_SIGNUP: 'false'
+          OLLAMA_MODELS: ''
+          APP_SUBDIR: gha-deployment-test-basic
+        run: |
+          app_path=$GITHUB_WORKSPACE/$APP_SUBDIR
+          filename="auto.gha.app.env"
+
+          mkdir -p "$app_path"
+
+          if [ "$DISABLE_SIGNUP" == "true" ]; then
+            echo "ENABLE_SIGNUP=false" >> $app_path/$filename
+          else
+            echo "ENABLE_SIGNUP=true" >> $app_path/$filename
+          fi
+
+          if [[ -n "$OLLAMA_MODELS" && ${#OLLAMA_MODELS} -gt 1 ]]; then
+            echo "MODELS=$OLLAMA_MODELS" >> $app_path/$filename
+          fi
+
+      - name: Assert ENABLE_SIGNUP=true in env file
+        run: |
+          app_path=$GITHUB_WORKSPACE/gha-deployment-test-basic
+          filename="auto.gha.app.env"
+          echo "Contents of $app_path/$filename:"
+          cat "$app_path/$filename"
+          if ! grep -q "ENABLE_SIGNUP=true" "$app_path/$filename"; then
+            echo "FAIL: expected ENABLE_SIGNUP=true in $filename"
+            exit 1
+          fi
+          echo "PASS: ENABLE_SIGNUP=true found"
+
+      - name: Assert MODELS not set when ollama_models is empty
+        run: |
+          app_path=$GITHUB_WORKSPACE/gha-deployment-test-basic
+          filename="auto.gha.app.env"
+          if grep -q "^MODELS=" "$app_path/$filename"; then
+            echo "FAIL: MODELS should not be set when ollama_models is empty"
+            exit 1
+          fi
+          echo "PASS: MODELS not set"

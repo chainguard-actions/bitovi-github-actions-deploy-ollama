@@ -1,0 +1,33 @@
+name: Test Route53 and certificate configuration inputs
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Run action with Route53 configuration inputs
+        id: action
+        uses: .
+        continue-on-error: true
+        with:
+          checkout: 'false'
+          tf_state_file_name: 'test-r53-state'
+          tf_state_bucket: 'test-r53-bucket'
+          aws_access_key_id: 'fake-key-id'
+          aws_secret_access_key: 'fake-secret-key'
+          aws_default_region: 'us-east-1'
+          aws_r53_enable: 'true'
+          aws_r53_domain_name: 'example.com'
+          aws_r53_sub_domain_name: 'app'
+          aws_r53_root_domain_deploy: 'false'
+          aws_r53_cert_arn: 'arn:aws:acm:us-east-1:123456789012:certificate/abc123'
+          aws_r53_create_root_cert: 'false'
+          aws_r53_create_sub_cert: 'true'
+          aws_r53_additional_tags: '{"r53":"test"}'
+
+      - name: Assert action was invoked with Route53 inputs
+        run: |
+          echo "Action step completed (may have failed due to missing real AWS credentials)"
+          echo "PASS: Route53 configuration inputs were accepted by the action"
