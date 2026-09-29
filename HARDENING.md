@@ -10,43 +10,52 @@
 
 **Harden Agent Version:** `2`
 
-Action **bitovi--github-actions-deploy-ollama/v0.1.0** was hardened automatically. 2 finding(s) were identified and resolved across 1 iteration(s).
+Action **bitovi--github-actions-deploy-ollama/v0.1.0** was hardened automatically. 3 finding(s) were identified and resolved across 1 iteration(s).
 
 ## Findings Fixed
 
 ### unpinned-uses (severity: high)
 
-Two `uses:` references in action.yaml are pinned to mutable tags rather than immutable 40-character SHA digests, making the action vulnerable to supply-chain attacks if the upstream tag is moved or overwritten:
-- `actions/checkout@v2` (mutable version tag)
-- `bitovi/github-actions-commons@v0.0.13` (mutable version tag)
-These should be pinned to full commit SHAs, e.g. `actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v2`.
+Two `uses:` references in action.yaml use mutable version tags instead of pinned 40-character SHA commit hashes, making the action vulnerable to supply-chain attacks if the referenced tag is moved or overwritten:
+- `uses: actions/checkout@v2` (tag `v2`)
+- `uses: bitovi/github-actions-commons@v0.0.13` (tag `v0.0.13`)
+These should be pinned to full SHA digests, e.g. `actions/checkout@<40-char-sha> # v2`.
 
 Locations:
 
-- `action.yaml:166`
-- `action.yaml:226`
+- `action.yaml:163`
+- `action.yaml:207`
 
 ### script-injection (severity: high)
 
-Rule (b) violation — unquoted shell variable expansions of workflow-controllable data in `run:` blocks.
+Rule (b) violation — unquoted shell expansion of env vars holding workflow-controllable context values.
 
-In the 'Copy Deployment Config' step, `$GITHUB_ACTION_PATH` is populated from `${{ github.action_path }}` (a github.* context value) and then used unquoted in the shell:
+In the 'Copy Deployment Config' step, the env var `GITHUB_ACTION_PATH` is populated from `${{ github.action_path }}` and then expanded **unquoted** in the run script:
   `cp -r  $GITHUB_ACTION_PATH/. "$app_path"`
+An attacker-controlled path value with shell metacharacters (spaces, globs, etc.) could alter command behavior. The variable must be double-quoted: `"$GITHUB_ACTION_PATH"`.
+
+Similarly, `$app_path` (derived from `$GITHUB_WORKSPACE/$APP_SUBDIR`) is used unquoted in:
   `rm -rf $app_path/operations`
-The `$app_path` variable is derived from `$GITHUB_WORKSPACE` (a workflow-controlled env var) and is also used unquoted throughout both run blocks.
-
-In the 'Set app env config' step, `$app_path` is again used unquoted:
-  `echo "ENABLE_SIGNUP=false" >> $app_path/$filename`
-  `echo "ENABLE_SIGNUP=true" >> $app_path/$filename`
-
-Unquoted expansions allow shell metacharacters (spaces, globs, semicolons, etc.) embedded in the values to be interpreted by the shell, enabling command injection. All expansions of workflow-controllable variables must be double-quoted.
 
 Locations:
 
-- `action.yaml:193`
-- `action.yaml:195`
-- `action.yaml:215`
-- `action.yaml:218`
+- `action.yaml:188`
+- `action.yaml:191`
+
+### script-injection (severity: high)
+
+Rule (b) violation — unquoted shell expansion of env vars holding workflow-controllable context values.
+
+In the 'Set app env config' step, the env var `GITHUB_ACTION_PATH` is again populated from `${{ github.action_path }}` and `DISABLE_SIGNUP` from `${{ inputs.disable-signup }}`. While `$DISABLE_SIGNUP` is safely double-quoted in the `if` comparison, `$app_path` (derived from the inherited `$GITHUB_WORKSPACE`) is used unquoted in:
+  `echo "ENABLE_SIGNUP=false" >> $app_path/$filename`
+  `echo "ENABLE_SIGNUP=true" >> $app_path/$filename`
+These path expansions must be quoted: `"$app_path/$filename"`.
+
+Locations:
+
+- `action.yaml:198`
+- `action.yaml:220`
+- `action.yaml:223`
 
 ## Iteration Notes
 
@@ -56,5 +65,10 @@ Locations:
 
 **Notes:**
 
-Fixed two unpinned-uses findings by pinning actions/checkout@v2 to SHA 0717577d45739eb3c851188b29f50ed6c0b2194e and bitovi/github-actions-commons@v0.0.13 to SHA 1921283129dc73b959a15637ee81690ce4f6f984, with original tags preserved as comments. Fixed script-injection findings by double-quoting all unquoted variable expansions: `$GITHUB_ACTION_PATH/.` → `"$GITHUB_ACTION_PATH/."`, `$app_path/operations` → `"$app_path/operations"`, and both `$app_path/$filename` redirections → `"$app_path/$filename"` in the 'Copy Deployment Config' and 'Set app env config' steps.
+Fixed all findings in hardened/action/action.yaml:
+1. Pinned `actions/checkout@v2` to `actions/checkout@0717577d45739eb3c851188b29f50ed6c0b2194e # v2`
+2. Pinned `bitovi/github-actions-commons@v0.0.13` to `bitovi/github-actions-commons@1921283129dc73b959a15637ee81690ce4f6f984 # v0.0.13`
+3. Quoted `$GITHUB_ACTION_PATH` in the 'Copy Deployment Config' step: `cp -r "$GITHUB_ACTION_PATH/." "$app_path"`
+4. Quoted `$app_path/operations` in the 'Copy Deployment Config' step: `rm -rf "$app_path/operations"`
+5. Quoted both `$app_path/$filename` redirect targets in the 'Set app env config' step for the ENABLE_SIGNUP=false and ENABLE_SIGNUP=true echo statements.
 

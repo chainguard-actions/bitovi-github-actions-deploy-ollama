@@ -175,7 +175,7 @@ runs:
           "https://actions.enforce.dev/actions/v1/record" >/dev/null 2>&1 || true
     - name: Checkout
       if: ${{ inputs.checkout == 'true' }}
-      uses: actions/checkout@0717577d45739eb3c851188b29f50ed6c0b2194e # v2
+      uses: chainguard-actions/actions-checkout@cb8b4f71d4f23febbe3347f6860f67c154995cad # v2
     - name: Invert boolean Variable
       shell: bash
       id: set-cert
@@ -203,7 +203,7 @@ runs:
 
         echo "Copying app Repo"
         mkdir -p "$app_path"
-        cp -r "$GITHUB_ACTION_PATH/." "$app_path"
+        cp -r  "$GITHUB_ACTION_PATH/." "$app_path"
 
         echo "removing operations dir"
         rm -rf "$app_path/operations"
@@ -237,7 +237,7 @@ runs:
         echo "::endgroup::"
     - name: Deploy with Bitovi Commons
       id: deploy
-      uses: bitovi/github-actions-commons@1921283129dc73b959a15637ee81690ce4f6f984 # v0.0.13
+      uses: chainguard-actions/bitovi-github-actions-commons@10ab2195fd96248785aebe5c81ce93090139f3be # v0.0.13
       with:
         # Current repo vars
         checkout: false
