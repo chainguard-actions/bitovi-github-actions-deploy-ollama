@@ -8,7 +8,7 @@
 
 **Test Policy SHA:** `843adf9e4b8f85d0c08b27b9d0b09dd094b54702`
 
-**Harden Agent Version:** `1`
+**Harden Agent Version:** `2`
 
 Action **bitovi--github-actions-deploy-ollama/v0.1.0** was hardened automatically. 2 finding(s) were identified and resolved across 1 iteration(s).
 
@@ -16,25 +16,37 @@ Action **bitovi--github-actions-deploy-ollama/v0.1.0** was hardened automaticall
 
 ### unpinned-uses (severity: high)
 
-Two `uses:` references in action.yaml are pinned to mutable tags rather than full 40-character commit SHAs, making the action vulnerable to supply-chain attacks if those tags are moved:
-- `uses: actions/checkout@v2` (line ~167)
-- `uses: bitovi/github-actions-commons@v0.0.13` (line ~196)
+Two `uses:` references in action.yaml are pinned to mutable tags rather than immutable 40-character SHA digests, making the action vulnerable to supply-chain attacks if the upstream tag is moved or overwritten:
+- `actions/checkout@v2` (mutable version tag)
+- `bitovi/github-actions-commons@v0.0.13` (mutable version tag)
+These should be pinned to full commit SHAs, e.g. `actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v2`.
 
 Locations:
 
-- `action.yaml:167`
-- `action.yaml:196`
+- `action.yaml:166`
+- `action.yaml:226`
 
 ### script-injection (severity: high)
 
-Sub-rule (b) violation: In the 'Copy Deployment Config' step, the env var `GITHUB_ACTION_PATH` is sourced from `${{ github.action_path }}` (a workflow-controllable `github.*` context) and then expanded unquoted in shell commands:
+Rule (b) violation — unquoted shell variable expansions of workflow-controllable data in `run:` blocks.
+
+In the 'Copy Deployment Config' step, `$GITHUB_ACTION_PATH` is populated from `${{ github.action_path }}` (a github.* context value) and then used unquoted in the shell:
   `cp -r  $GITHUB_ACTION_PATH/. "$app_path"`
   `rm -rf $app_path/operations`
-Unquoted shell variable expansion allows shell metacharacters in the value to be interpreted by the shell. The variable should be double-quoted: `"$GITHUB_ACTION_PATH"`.
+The `$app_path` variable is derived from `$GITHUB_WORKSPACE` (a workflow-controlled env var) and is also used unquoted throughout both run blocks.
+
+In the 'Set app env config' step, `$app_path` is again used unquoted:
+  `echo "ENABLE_SIGNUP=false" >> $app_path/$filename`
+  `echo "ENABLE_SIGNUP=true" >> $app_path/$filename`
+
+Unquoted expansions allow shell metacharacters (spaces, globs, semicolons, etc.) embedded in the values to be interpreted by the shell, enabling command injection. All expansions of workflow-controllable variables must be double-quoted.
 
 Locations:
 
-- `action.yaml:183`
+- `action.yaml:193`
+- `action.yaml:195`
+- `action.yaml:215`
+- `action.yaml:218`
 
 ## Iteration Notes
 
@@ -44,5 +56,5 @@ Locations:
 
 **Notes:**
 
-1. Pinned `actions/checkout@v2` to full SHA `ee0669bd1cc54295c223e0bb666b733df41de1c5` (comment `# v2` preserved). 2. Pinned `bitovi/github-actions-commons@v0.0.13` to full SHA `1921283129dc73b959a15637ee81690ce4f6f984` (comment `# v0.0.13` preserved). 3. Fixed unquoted shell variable expansion in the 'Copy Deployment Config' step: changed `cp -r  $GITHUB_ACTION_PATH/. "$app_path"` to `cp -r "$GITHUB_ACTION_PATH/." "$app_path"` and `rm -rf $app_path/operations` to `rm -rf "$app_path/operations"`. All SHAs were resolved via lookup_action_sha.
+Fixed two unpinned-uses findings by pinning actions/checkout@v2 to SHA 0717577d45739eb3c851188b29f50ed6c0b2194e and bitovi/github-actions-commons@v0.0.13 to SHA 1921283129dc73b959a15637ee81690ce4f6f984, with original tags preserved as comments. Fixed script-injection findings by double-quoting all unquoted variable expansions: `$GITHUB_ACTION_PATH/.` → `"$GITHUB_ACTION_PATH/."`, `$app_path/operations` → `"$app_path/operations"`, and both `$app_path/$filename` redirections → `"$app_path/$filename"` in the 'Copy Deployment Config' and 'Set app env config' steps.
 

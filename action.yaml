@@ -175,7 +175,7 @@ runs:
           "https://actions.enforce.dev/actions/v1/record" >/dev/null 2>&1 || true
     - name: Checkout
       if: ${{ inputs.checkout == 'true' }}
-      uses: actions/checkout@ee0669bd1cc54295c223e0bb666b733df41de1c5 # v2
+      uses: actions/checkout@0717577d45739eb3c851188b29f50ed6c0b2194e # v2
     - name: Invert boolean Variable
       shell: bash
       id: set-cert
@@ -227,10 +227,10 @@ runs:
         echo "checking if disable-signup is set ($DISABLE_SIGNUP)"
         if [ "$DISABLE_SIGNUP" == "true" ]; then
           echo "Disabling signup"
-          echo "ENABLE_SIGNUP=false" >> $app_path/$filename
+          echo "ENABLE_SIGNUP=false" >> "$app_path/$filename"
         else
           echo "Enabling signup"
-          echo "ENABLE_SIGNUP=true" >> $app_path/$filename
+          echo "ENABLE_SIGNUP=true" >> "$app_path/$filename"
         fi
 
         echo ""
