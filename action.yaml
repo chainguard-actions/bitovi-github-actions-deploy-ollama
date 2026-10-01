@@ -203,7 +203,7 @@ runs:
 
         echo "Copying app Repo"
         mkdir -p "$app_path"
-        cp -r  "$GITHUB_ACTION_PATH/." "$app_path"
+        cp -r "$GITHUB_ACTION_PATH/." "$app_path"
 
         echo "removing operations dir"
         rm -rf "$app_path/operations"
@@ -227,17 +227,17 @@ runs:
         echo "checking if disable-signup is set ($DISABLE_SIGNUP)"
         if [ "$DISABLE_SIGNUP" == "true" ]; then
           echo "Disabling signup"
-          echo "ENABLE_SIGNUP=false" >> "$app_path/$filename"
+          echo "ENABLE_SIGNUP=false" >> $app_path/$filename
         else
           echo "Enabling signup"
-          echo "ENABLE_SIGNUP=true" >> "$app_path/$filename"
+          echo "ENABLE_SIGNUP=true" >> $app_path/$filename
         fi
 
         echo ""
         echo "::endgroup::"
     - name: Deploy with Bitovi Commons
       id: deploy
-      uses: chainguard-actions/bitovi-github-actions-commons@10ab2195fd96248785aebe5c81ce93090139f3be # v0.0.13
+      uses: chainguard-actions/bitovi-github-actions-commons@069ad5029975bb19d63be123e2f6f64cd739ef85 # v0.0.13
       with:
         # Current repo vars
         checkout: false

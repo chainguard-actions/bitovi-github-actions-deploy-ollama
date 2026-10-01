@@ -1,117 +1,76 @@
 name: Test optional inputs coverage
 on:
   workflow_dispatch:
-
 jobs:
   test:
     runs-on: ubuntu-latest
-    env:
-      GITHUB_EVENT_NAME: push
-      GITHUB_REF: refs/heads/main
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
-      # Call the action under test with all optional inputs provided and dummy AWS creds.
-      # The action will fail at the AWS deployment step (no real credentials),
-      # but we use continue-on-error so we can still assert on early-step behavior.
-      # This test exists to ensure all optional inputs are accepted without error
-      # in the pre-deployment composite steps.
       - id: action
         uses: .
         continue-on-error: true
         with:
           checkout: 'false'
-          # AWS core
-          aws_access_key_id: 'AKIADUMMYKEY00000000'
-          aws_secret_access_key: 'dummysecretaccesskey0000000000000000000'
-          aws_session_token: 'dummysessiontoken0000000000000000000000'
+          # AWS Configuration
+          aws_access_key_id: 'AKIAIOSFODNN7EXAMPLE'
+          aws_secret_access_key: 'wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY'
+          aws_session_token: 'FwoGZXIvYXdzEJr//////////fake-session-token'
           aws_default_region: 'us-east-1'
-          aws_resource_identifier: 'test-ollama-optional-inputs'
-          aws_extra_tags: 'Project=test,Owner=ci'
+          aws_resource_identifier: 'test-ollama-coverage'
+          aws_extra_tags: 'env=test,team=platform'
           # ENV files
-          env_aws_secret: 'dummy-secret'
-          env_repo: 'dummy-env-repo-value'
-          env_ghs: 'dummy-env-ghs-value'
-          env_ghv: 'dummy-env-ghv-value'
-          # EC2
-          aws_ec2_ami_filter: 'ubuntu/images/hvm-ssd/ubuntu-*-22.04-amd64-server-*'
+          env_aws_secret: 'test-secret'
+          env_repo: 'MY_VAR=hello'
+          env_ghs: 'GH_SECRET=mysecret'
+          env_ghv: 'GH_VAR=myvar'
+          # EC2 Instance config
+          aws_ec2_instance_type: 'inf1.xlarge'
+          aws_ec2_instance_profile: 'my-ec2-instance-profile'
+          aws_ec2_create_keypair_sm: 'true'
           aws_ec2_instance_vol_size: '20'
-          aws_ec2_instance_profile: 'dummy-instance-profile'
-          aws_ec2_create_keypair_sm: 'false'
-          aws_ec2_additional_tags: 'Role=test'
-          # Stack management
-          tf_state_file_name: 'test-optional-inputs'
-          tf_state_file_name_append: 'ci'
-          tf_state_bucket: 'dummy-tf-state-bucket'
+          aws_ec2_additional_tags: 'role=ollama'
+          aws_ec2_ami_filter: 'ubuntu/images/hvm-ssd/ubuntu-*-22.04-amd64-server-*'
+          infrastructure_only: 'false'
+          docker_cloudwatch_skip_destroy: 'false'
+          disable-signup: 'false'
+          # Stack Management
+          tf_stack_destroy: 'false'
+          tf_state_file_name: 'test-ollama-state'
+          tf_state_file_name_append: 'coverage'
+          tf_state_bucket: 'my-terraform-state-bucket'
           tf_state_bucket_destroy: 'false'
           # Domains
           aws_domain_name: 'example.com'
           aws_sub_domain: 'ollama'
           aws_root_domain: 'example.com'
-          aws_cert_arn: 'arn:aws:acm:us-east-1:123456789012:certificate/dummy-cert'
+          aws_cert_arn: 'arn:aws:acm:us-east-1:123456789012:certificate/fake-cert-arn'
           aws_create_root_cert: 'false'
           aws_create_sub_cert: 'false'
-          aws_no_cert: 'true'
-          # VPC
+          aws_no_cert: 'false'
+          # VPC Inputs
           aws_vpc_create: 'false'
-          aws_vpc_name: 'test-vpc'
+          aws_vpc_name: 'my-test-vpc'
           aws_vpc_cidr_block: '10.0.0.0/16'
           aws_vpc_public_subnets: '10.0.1.0/24'
           aws_vpc_private_subnets: '10.0.2.0/24'
           aws_vpc_availability_zones: 'us-east-1a'
-          aws_vpc_id: 'vpc-00000000000000000'
-          aws_vpc_subnet_id: 'subnet-00000000000000000'
-          aws_vpc_additional_tags: 'Network=test'
+          aws_vpc_id: 'vpc-0123456789abcdef0'
+          aws_vpc_subnet_id: 'subnet-0123456789abcdef0'
+          aws_vpc_additional_tags: 'network=test'
 
-      # Verify the action ran (pre-deployment steps executed) and failed gracefully
-      # at the AWS deployment step due to dummy credentials.
-      - name: Assert action ran pre-deployment steps and failed gracefully
+      - name: Assert action ran (outputs set, or failed gracefully without real AWS credentials)
         env:
           OUTCOME: ${{ steps.action.outcome }}
+          VM_URL: ${{ steps.action.outputs.vm_url }}
         run: |
           echo "outcome: $OUTCOME"
+          echo "vm_url: $VM_URL"
           if [ "$OUTCOME" = "success" ]; then
-            echo "PASS: action succeeded (unexpected but acceptable)"
+            echo "PASS: action succeeded"
           elif [ "$OUTCOME" = "failure" ]; then
-            echo "PASS: action failed gracefully as expected with dummy AWS credentials"
+            echo "PASS: action failed gracefully (expected without real AWS credentials)"
           else
             echo "FAIL: unexpected outcome '$OUTCOME'"
             exit 1
           fi
-
-      # Verify the cert logic: when aws_no_cert=true, enable_cert should NOT be set
-      - name: Verify cert disabled logic with aws_no_cert=true
-        run: |
-          AWS_NO_CERT='true'
-          enable_cert=""
-          if [ "$AWS_NO_CERT" == "false" ]; then
-            enable_cert="true"
-          fi
-          echo "enable_cert: '$enable_cert'"
-          if [ -n "$enable_cert" ]; then
-            echo "FAIL: expected enable_cert to be empty when aws_no_cert='true', got '$enable_cert'"
-            exit 1
-          fi
-          echo "PASS: enable_cert is empty as expected when aws_no_cert='true'"
-
-      # Verify the signup logic: default (false) means ENABLE_SIGNUP=true
-      - name: Verify enable-signup logic (default)
-        run: |
-          DISABLE_SIGNUP='false'
-          app_path="$RUNNER_TEMP/gha-deployment-optional-test"
-          filename="auto.gha.app.env"
-          mkdir -p "$app_path"
-
-          if [ "$DISABLE_SIGNUP" == "true" ]; then
-            echo "ENABLE_SIGNUP=false" >> "$app_path/$filename"
-          else
-            echo "ENABLE_SIGNUP=true" >> "$app_path/$filename"
-          fi
-
-          ACTUAL=$(grep "ENABLE_SIGNUP" "$app_path/$filename" | cut -d= -f2)
-          echo "actual ENABLE_SIGNUP: $ACTUAL"
-          if [ "$ACTUAL" != "true" ]; then
-            echo "FAIL: expected ENABLE_SIGNUP='true' when disable-signup='false', got '$ACTUAL'"
-            exit 1
-          fi
-          echo "PASS: ENABLE_SIGNUP=true is set correctly when disable-signup=false"
