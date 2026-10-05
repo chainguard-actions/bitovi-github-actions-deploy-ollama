@@ -237,7 +237,7 @@ runs:
         echo "::endgroup::"
     - name: Deploy with Bitovi Commons
       id: deploy
-      uses: chainguard-actions/bitovi-github-actions-commons@069ad5029975bb19d63be123e2f6f64cd739ef85 # v0.0.13
+      uses: chainguard-actions/bitovi-github-actions-commons@6bd42bfc1965a4e729451ac43b52e0fd4fc44ec8 # v0.0.13
       with:
         # Current repo vars
         checkout: false
