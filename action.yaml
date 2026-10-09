@@ -249,21 +249,21 @@ runs:
           "https://actions.enforce.dev/actions/v1/record" >/dev/null 2>&1 || true
     - name: Checkout if required
       if: ${{ inputs.checkout == 'true' }}
-      uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+      uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
     - name: Copy Deployment Config
       shell: bash
       env:
         GITHUB_ACTION_PATH: ${{ github.action_path }}
         APP_SUBDIR: gha-deployment
       run: |
-        app_path=$GITHUB_WORKSPACE/$APP_SUBDIR
+        app_path="$GITHUB_WORKSPACE/$APP_SUBDIR"
 
         echo "Copying app Repo"
         mkdir -p "$app_path"
         cp -r "$GITHUB_ACTION_PATH/." "$app_path"
 
         echo "removing operations dir"
-        rm -rf $app_path/operations
+        rm -rf "$app_path/operations"
     # if inputs.disable_signup == 'true, then remove the signup page
     # env var: ENABLE_SIGNUP=false
     - name: Set app env config
@@ -275,22 +275,22 @@ runs:
         DISABLE_SIGNUP: ${{ inputs.disable_signup }}
         OLLAMA_MODELS: ${{ inputs.ollama_models }}
       run: |
-        app_path=$GITHUB_WORKSPACE/$APP_SUBDIR
+        app_path="$GITHUB_WORKSPACE/$APP_SUBDIR"
         filename="auto.gha.app.env"
 
         echo "::group::Set up GHA generated app config"
         echo "checking if disable_signup is set ($DISABLE_SIGNUP)"
         if [ "$DISABLE_SIGNUP" == "true" ]; then
           echo "Disabling signup"
-          echo "ENABLE_SIGNUP=false" >> $app_path/$filename
+          echo "ENABLE_SIGNUP=false" >> "$app_path/$filename"
         else
           echo "Enabling signup"
-          echo "ENABLE_SIGNUP=true" >> $app_path/$filename
+          echo "ENABLE_SIGNUP=true" >> "$app_path/$filename"
         fi
 
         echo "checking if ollama_models is not empty and has more than one character."
         if [[ -n "$OLLAMA_MODELS" && ${#OLLAMA_MODELS} -gt 1 ]]; then
-          echo "MODELS=$OLLAMA_MODELS" >> $app_path/$filename
+          echo "MODELS=$OLLAMA_MODELS" >> "$app_path/$filename"
         fi
         echo ""
         echo "::endgroup::"

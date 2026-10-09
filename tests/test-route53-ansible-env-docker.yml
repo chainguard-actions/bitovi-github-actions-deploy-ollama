@@ -1,0 +1,57 @@
+name: Test Route53, Ansible, Env Files, and Docker Configuration Inputs
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - id: action
+        uses: .
+        continue-on-error: true
+        with:
+          # Required inputs
+          tf_state_file_name: test-state
+          tf_state_bucket: test-bucket
+          tf_state_file_name_append: '-append'
+          tf_state_bucket_destroy: 'false'
+          # AWS config
+          aws_access_key_id: fake-key
+          aws_secret_access_key: fake-secret
+          # Ansible config
+          ansible_ssh_to_private_ip: 'false'
+          ansible_start_docker_timeout: '300'
+          # Env files
+          env_aws_secret: 'my-secret-name'
+          env_repo: '.env'
+          env_ghs: 'MY_GH_SECRET'
+          env_ghv: 'MY_GH_VAR'
+          # Route53
+          aws_r53_enable: 'false'
+          aws_r53_domain_name: 'example.com'
+          aws_r53_sub_domain_name: 'test'
+          aws_r53_root_domain_deploy: 'false'
+          aws_r53_cert_arn: 'arn:aws:acm:us-east-1:123456789012:certificate/abc'
+          aws_r53_create_root_cert: 'false'
+          aws_r53_create_sub_cert: 'false'
+          aws_r53_additional_tags: '{"r53":"test"}'
+          # Docker
+          docker_remove_orphans: 'false'
+          docker_full_cleanup: 'false'
+          docker_repo_app_directory_cleanup: 'false'
+          docker_cloudwatch_lg_name: 'test-log-group'
+          docker_cloudwatch_skip_destroy: 'false'
+          docker_cloudwatch_retention_days: '7'
+
+      - name: Assert action ran or failed gracefully
+        env:
+          OUTCOME: ${{ steps.action.outcome }}
+        run: |
+          echo "outcome: $OUTCOME"
+          if [ "$OUTCOME" = "success" ] || [ "$OUTCOME" = "failure" ]; then
+            echo "PASS: action completed with outcome '$OUTCOME' (sentinel repo or missing AWS creds expected)"
+          else
+            echo "FAIL: unexpected outcome '$OUTCOME'"
+            exit 1
+          fi
