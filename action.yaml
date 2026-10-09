@@ -249,7 +249,7 @@ runs:
           "https://actions.enforce.dev/actions/v1/record" >/dev/null 2>&1 || true
     - name: Checkout if required
       if: ${{ inputs.checkout == 'true' }}
-      uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      uses: chainguard-actions/actions-checkout@31bbccf724702f8a0dc7a3ed7db8fcca2066babc # v4
     - name: Copy Deployment Config
       shell: bash
       env:
@@ -296,7 +296,7 @@ runs:
         echo "::endgroup::"
     - name: Deploy with Bitovi Commons
       id: deploy
-      uses: bitovi/github-actions-commons@a4636c6df1c274226c029461b31dac4bb79fce09 # v1
+      uses: chainguard-actions/bitovi-github-actions-commons@1e3b7f28584a7e9a6c4dbefe88aa3ef35e393dbf # v1
       with:
         # AWS Specific
         aws_access_key_id: ${{ inputs.aws_access_key_id }}
