@@ -296,7 +296,7 @@ runs:
         echo "::endgroup::"
     - name: Deploy with Bitovi Commons
       id: deploy
-      uses: chainguard-actions/bitovi-github-actions-commons@8cc6ecd48a20bd31848d58a93d05e2659939af60 # v1
+      uses: chainguard-actions/bitovi-github-actions-commons@1e3b7f28584a7e9a6c4dbefe88aa3ef35e393dbf # v1
       with:
         # AWS Specific
         aws_access_key_id: ${{ inputs.aws_access_key_id }}
